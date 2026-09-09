@@ -1,31 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useUserContext } from "@/lib/identity/context";
+import { useIdentity } from "@/lib/identity/context";
+import { resolveName } from "@/lib/actions/users";
 
 export function LandingForm() {
-  const { allUsers, currentUser, hydrated, setCurrentUserById } = useUserContext();
+  const { userId, hydrated, setUserId } = useIdentity();
   const router = useRouter();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (hydrated && currentUser) {
+    if (hydrated && userId) {
       router.replace("/calendar");
     }
-  }, [hydrated, currentUser, router]);
+  }, [hydrated, userId, router]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = name.trim().toLowerCase();
-    const match = allUsers.find((u) => u.name.toLowerCase() === trimmed);
-    if (!match) {
-      setError("Name not recognized. Please check the spelling.");
-      return;
-    }
-    setCurrentUserById(match.id);
-    router.push("/calendar");
+    setError(null);
+    startTransition(async () => {
+      const result = await resolveName(name);
+      if (!result.valid) {
+        setError("Name not recognized.");
+        return;
+      }
+      setUserId(result.id);
+      router.push("/calendar");
+    });
   }
 
   return (
@@ -40,8 +44,8 @@ export function LandingForm() {
             setError(null);
           }}
           autoFocus
+          autoComplete="off"
           className="w-full rounded-lg border border-beige-border bg-white/60 px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-maroon/40"
-          placeholder="Karen, Cathy, Jeff, or Charlie"
         />
       </label>
       {error && (
@@ -51,9 +55,10 @@ export function LandingForm() {
       )}
       <button
         type="submit"
-        className="w-full rounded-lg bg-ink px-4 py-3 text-cream font-medium hover:bg-ink/90 transition-colors"
+        disabled={pending || !name.trim()}
+        className="w-full rounded-lg bg-ink px-4 py-3 text-cream font-medium hover:bg-ink/90 disabled:opacity-50 transition-colors"
       >
-        Continue
+        {pending ? "Checking…" : "Continue"}
       </button>
     </form>
   );

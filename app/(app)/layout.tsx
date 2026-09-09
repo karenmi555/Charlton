@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { AuthGate } from "@/components/shell/AuthGate";
+import { AuthShell } from "@/components/shell/AuthShell";
+import { getUsers } from "@/lib/actions/users";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const users = await getUsers();
   return (
-    <AuthGate>
+    <AuthShell allUsers={users}>
       <div className="min-h-screen">
         <header className="mx-auto max-w-6xl px-6 pt-8 pb-4 flex items-start justify-between gap-4">
           <div>
@@ -31,6 +33,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <div className="mx-auto max-w-6xl px-6 pb-16">{children}</div>
       </div>
-    </AuthGate>
+    </AuthShell>
   );
 }

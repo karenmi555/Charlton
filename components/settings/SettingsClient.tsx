@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useUserContext } from "@/lib/identity/context";
+import { useAuth } from "@/lib/identity/context";
 import { updateUserColor } from "@/lib/actions/users";
 import type { UserPublic } from "@/lib/types";
 
 export function SettingsClient({ users }: { users: UserPublic[] }) {
-  const { clearCurrentUser, currentUser } = useUserContext();
+  const { clearCurrentUser, currentUser } = useAuth();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [drafts, setDrafts] = useState<Record<string, string>>(

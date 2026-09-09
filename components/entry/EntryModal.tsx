@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useUserContext } from "@/lib/identity/context";
+import { useAuth } from "@/lib/identity/context";
 import { createEntry, updateEntry, deleteEntry, type EntryInput } from "@/lib/actions/entries";
 import type { EntryPublic, EntryStatus, UserPublic } from "@/lib/types";
 
@@ -16,7 +16,7 @@ type Props = {
 
 export function EntryModal(props: Props) {
   const { users, onClose, onSaved } = props;
-  const { currentUser } = useUserContext();
+  const { currentUser } = useAuth();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);

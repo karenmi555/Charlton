@@ -9,6 +9,21 @@ export async function getUsers(): Promise<UserPublic[]> {
   return users.map((u) => ({ id: u.id, name: u.name, color: u.color }));
 }
 
+// Case-insensitive name lookup. Deliberately returns only { id } on
+// success (no name/color) and { valid: false } on failure — so an
+// unauthenticated caller cannot enumerate the whitelist by trial.
+export async function resolveName(
+  name: string
+): Promise<{ valid: true; id: string } | { valid: false }> {
+  const trimmed = name.trim().toLowerCase();
+  if (!trimmed) return { valid: false };
+  const user = await prisma.user.findFirst({
+    where: { name: { equals: trimmed, mode: "insensitive" } },
+    select: { id: true },
+  });
+  return user ? { valid: true, id: user.id } : { valid: false };
+}
+
 export async function updateUserColor(userId: string, color: string): Promise<void> {
   const hex = color.trim();
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
