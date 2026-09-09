@@ -1,0 +1,81 @@
+// The Apartment — shared calendar schema.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum EntryStatus {
+  Confirmed
+  Tentative
+}
+
+enum LogAction {
+  Create
+  Update
+  Delete
+}
+
+model User {
+  id             String        @id
+  name           String        @unique
+  color          String
+  createdAt      DateTime      @default(now())
+
+  entryLinks     EntryUser[]
+  entriesCreated Entry[]       @relation("EntryCreatedBy")
+  entriesUpdated Entry[]       @relation("EntryUpdatedBy")
+  activityLogs   ActivityLog[]
+}
+
+model Entry {
+  id          String    @id @default(cuid())
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  status      EntryStatus @default(Confirmed)
+  hasGuests   Boolean   @default(false)
+  notes       String    @default("")
+
+  createdById String
+  createdBy   User      @relation("EntryCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?     @relation("EntryUpdatedBy", fields: [updatedById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       EntryUser[]
+
+  @@index([startDate, endDate])
+}
+
+model EntryUser {
+  entryId String
+  userId  String
+  order   Int
+  entry   Entry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([entryId, userId])
+  @@index([userId])
+}
+
+// Retained after Entry deletion. entryId is a raw reference, no FK — so
+// deleting an Entry does not cascade to its logs.
+model ActivityLog {
+  id        String    @id @default(cuid())
+  actorId   String
+  actor     User      @relation(fields: [actorId], references: [id])
+  action    LogAction
+  entryId   String?
+  summary   String
+  changes   Json
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt(sort: Desc)])
+}
