@@ -6,7 +6,7 @@ A lightweight shared calendar for a 2-bedroom apartment used by four people (Kar
 
 ## What it does
 
-- **Month view** with prev/next navigation and a filled-circle "today" badge.
+- **Month view** with prev/next navigation and a filled-circle "today" badge. On viewports ≥ 1024px wide the current + next month render side-by-side; on smaller screens it's a single month. Nav advances by one month regardless — the pair scrolls together.
 - **Multi-day event bars** that wrap at week boundaries and stack vertically when they overlap.
 - **Multi-name stays** rendered as a horizontal color split (one segment per user, in their assigned color).
 - **Tentative vs. confirmed** stays — tentative gets a dashed border and cream fill.

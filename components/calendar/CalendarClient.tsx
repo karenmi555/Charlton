@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MonthNav } from "./MonthNav";
 import { MonthGrid } from "./MonthGrid";
 import { Legend } from "./Legend";
 import { EntryModal } from "@/components/entry/EntryModal";
 import type { EntryPublic, UserPublic } from "@/lib/types";
-import { buildMonthGrid, shiftMonth } from "@/lib/date/layout";
+import { buildMonthGrid, shiftMonth, formatMonthYear } from "@/lib/date/layout";
 
 type Props = {
   year: number;
@@ -25,11 +24,16 @@ export function CalendarClient({ year, month, entries, users, todayIso }: Props)
     | { mode: "edit"; entryId: string }
   >({ mode: "closed" });
 
-  const grid = buildMonthGrid(year, month);
+  const primaryGrid = buildMonthGrid(year, month);
+  const next = shiftMonth(year, month, 1);
+  const secondaryGrid = buildMonthGrid(next.year, next.month);
+
+  const primaryLabel = formatMonthYear(new Date(year, month, 1));
+  const secondaryLabel = formatMonthYear(new Date(next.year, next.month, 1));
 
   function goToMonth(delta: number) {
-    const next = shiftMonth(year, month, delta);
-    router.push(`/calendar?y=${next.year}&m=${next.month + 1}`);
+    const target = shiftMonth(year, month, delta);
+    router.push(`/calendar?y=${target.year}&m=${target.month + 1}`);
   }
 
   function onDayClick(dateIso: string) {
@@ -52,15 +56,52 @@ export function CalendarClient({ year, month, entries, users, todayIso }: Props)
 
   return (
     <div className="space-y-6">
-      <MonthNav year={year} month={month} onPrev={() => goToMonth(-1)} onNext={() => goToMonth(1)} />
-      <MonthGrid
-        grid={grid}
-        entries={entries}
-        users={users}
-        todayIso={todayIso}
-        onDayClick={onDayClick}
-        onEntryClick={onEntryClick}
-      />
+      <div className="flex items-center justify-between gap-3">
+        <button
+          onClick={() => goToMonth(-1)}
+          aria-label="Previous month"
+          className="w-10 h-10 shrink-0 rounded-lg border border-beige-border bg-transparent hover:bg-beige-button text-ink text-lg flex items-center justify-center"
+        >
+          ←
+        </button>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink text-center truncate">
+            {primaryLabel}
+          </h2>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink text-center truncate hidden lg:block">
+            {secondaryLabel}
+          </h2>
+        </div>
+        <button
+          onClick={() => goToMonth(1)}
+          aria-label="Next month"
+          className="w-10 h-10 shrink-0 rounded-lg border border-beige-border bg-transparent hover:bg-beige-button text-ink text-lg flex items-center justify-center"
+        >
+          →
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MonthGrid
+          grid={primaryGrid}
+          entries={entries}
+          users={users}
+          todayIso={todayIso}
+          onDayClick={onDayClick}
+          onEntryClick={onEntryClick}
+        />
+        <div className="hidden lg:block">
+          <MonthGrid
+            grid={secondaryGrid}
+            entries={entries}
+            users={users}
+            todayIso={todayIso}
+            onDayClick={onDayClick}
+            onEntryClick={onEntryClick}
+          />
+        </div>
+      </div>
+
       <Legend users={users} />
 
       {modal.mode === "create" && (

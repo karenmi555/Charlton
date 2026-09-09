@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { listEntriesInRange } from "@/lib/actions/entries";
 import { getUsers } from "@/lib/actions/users";
-import { buildMonthGrid, toDayId } from "@/lib/date/layout";
+import { buildMonthGrid, toDayId, shiftMonth } from "@/lib/date/layout";
 import { CalendarClient } from "@/components/calendar/CalendarClient";
 
 type SearchParams = { y?: string; m?: string };
@@ -26,8 +26,14 @@ export default async function CalendarPage({
   }
 
   const month = month1Based - 1;
-  const grid = buildMonthGrid(year, month);
-  const entries = await listEntriesInRange(toDayId(grid.gridStart), toDayId(grid.gridEnd));
+  const primaryGrid = buildMonthGrid(year, month);
+  const nextMonth = shiftMonth(year, month, 1);
+  const secondaryGrid = buildMonthGrid(nextMonth.year, nextMonth.month);
+
+  const entries = await listEntriesInRange(
+    toDayId(primaryGrid.gridStart),
+    toDayId(secondaryGrid.gridEnd)
+  );
   const users = await getUsers();
 
   return (
