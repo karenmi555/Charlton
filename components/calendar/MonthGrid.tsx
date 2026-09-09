@@ -21,6 +21,11 @@ type Props = {
   todayIso: string;
   onDayClick: (dateIso: string) => void;
   onEntryClick: (entryId: string) => void;
+  // Optional per-week minimum lane count. When two calendars sit side-by-side
+  // we pass max(primaryLanes, secondaryLanes) so their rows line up visually.
+  // Only the extra padding beyond this grid's own lane count is hidden on
+  // narrow screens, so single-month mobile view stays tight.
+  minLaneCountByWeek?: number[];
 };
 
 export function MonthGrid({
@@ -30,6 +35,7 @@ export function MonthGrid({
   todayIso,
   onDayClick,
   onEntryClick,
+  minLaneCountByWeek,
 }: Props) {
   const segments = layoutEntries(entries, grid);
   const entriesById = new Map(entries.map((e) => [e.id, e]));
@@ -55,7 +61,12 @@ export function MonthGrid({
 
       <div>
         {grid.weeks.map((week, weekIndex) => {
-          const laneCount = (maxLanes.get(weekIndex) ?? -1) + 1;
+          const ownLaneCount = (maxLanes.get(weekIndex) ?? -1) + 1;
+          const targetLaneCount = Math.max(
+            ownLaneCount,
+            minLaneCountByWeek?.[weekIndex] ?? 0
+          );
+          const paddingLanes = targetLaneCount - ownLaneCount;
           const weekSegments = segmentsByWeek.get(weekIndex) ?? [];
           return (
             <div
@@ -109,14 +120,31 @@ export function MonthGrid({
                 );
               })}
 
-              {/* Placeholder to reserve height for lane rows even when only bars use them */}
-              {Array.from({ length: laneCount }).map((_, i) => (
+              {/* Reserve height for this grid's own lane rows — visible at
+                  every breakpoint. */}
+              {Array.from({ length: ownLaneCount }).map((_, i) => (
                 <div
                   key={`spacer-${i}`}
                   style={{ gridRow: 2 + i, gridColumn: "1 / span 7", height: "1.75rem" }}
                   aria-hidden
                 />
               ))}
+              {/* Extra spacers to match the sibling calendar's height at the
+                  same weekIndex. Only shown on lg+ where both calendars are
+                  visible; hidden below so single-month mobile stays compact. */}
+              {paddingLanes > 0 &&
+                Array.from({ length: paddingLanes }).map((_, i) => (
+                  <div
+                    key={`pad-${i}`}
+                    className="hidden lg:block"
+                    style={{
+                      gridRow: 2 + ownLaneCount + i,
+                      gridColumn: "1 / span 7",
+                      height: "1.75rem",
+                    }}
+                    aria-hidden
+                  />
+                ))}
             </div>
           );
         })}
