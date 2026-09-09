@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   layoutEntries,
   maxLanePerWeek,
@@ -21,12 +22,18 @@ type Props = {
   todayIso: string;
   onDayClick: (dateIso: string) => void;
   onEntryClick: (entryId: string) => void;
-  // Optional per-week minimum lane count. When two calendars sit side-by-side
-  // we pass max(primaryLanes, secondaryLanes) so their rows line up visually.
-  // Only the extra padding beyond this grid's own lane count is hidden on
-  // narrow screens, so single-month mobile view stays tight.
+  // Optional per-week minimum lane count from the sibling calendar. On lg+
+  // where both months are visible, each week's height uses max(own, sibling)
+  // so rows line up horizontally. Below lg only the primary is shown, so we
+  // fall back to each grid's own lane counts (compact mobile view).
   minLaneCountByWeek?: number[];
 };
+
+function tracks(laneCount: number): string {
+  return laneCount > 0
+    ? `auto repeat(${laneCount}, 1.75rem)`
+    : "auto";
+}
 
 export function MonthGrid({
   grid,
@@ -66,12 +73,16 @@ export function MonthGrid({
             ownLaneCount,
             minLaneCountByWeek?.[weekIndex] ?? 0
           );
-          const paddingLanes = targetLaneCount - ownLaneCount;
           const weekSegments = segmentsByWeek.get(weekIndex) ?? [];
+          const rowStyle: CSSProperties = {
+            "--own-tracks": tracks(ownLaneCount),
+            "--target-tracks": tracks(targetLaneCount),
+          } as CSSProperties;
           return (
             <div
               key={weekIndex}
-              className="grid grid-cols-7 border-b border-beige-border last:border-b-0"
+              className="week-row grid grid-cols-7 border-b border-beige-border last:border-b-0"
+              style={rowStyle}
             >
               {week.map((day, colIndex) => {
                 const dayIso = toDayId(day);
@@ -119,32 +130,6 @@ export function MonthGrid({
                   />
                 );
               })}
-
-              {/* Reserve height for this grid's own lane rows — visible at
-                  every breakpoint. */}
-              {Array.from({ length: ownLaneCount }).map((_, i) => (
-                <div
-                  key={`spacer-${i}`}
-                  style={{ gridRow: 2 + i, gridColumn: "1 / span 7", height: "1.75rem" }}
-                  aria-hidden
-                />
-              ))}
-              {/* Extra spacers to match the sibling calendar's height at the
-                  same weekIndex. Only shown on lg+ where both calendars are
-                  visible; hidden below so single-month mobile stays compact. */}
-              {paddingLanes > 0 &&
-                Array.from({ length: paddingLanes }).map((_, i) => (
-                  <div
-                    key={`pad-${i}`}
-                    className="hidden lg:block"
-                    style={{
-                      gridRow: 2 + ownLaneCount + i,
-                      gridColumn: "1 / span 7",
-                      height: "1.75rem",
-                    }}
-                    aria-hidden
-                  />
-                ))}
             </div>
           );
         })}

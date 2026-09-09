@@ -22,3 +22,17 @@ html, body {
 body {
   min-height: 100vh;
 }
+
+/* Calendar week rows use explicit grid-template-rows so the row heights
+   are deterministic. Below the lg breakpoint only the primary month is
+   visible, so we use each grid's own required lane count (compact).
+   At lg+, both months are visible side-by-side, so we use the max lane
+   count across both grids to keep rows aligned horizontally. */
+.week-row {
+  grid-template-rows: var(--own-tracks);
+}
+@media (min-width: 1024px) {
+  .week-row {
+    grid-template-rows: var(--target-tracks);
+  }
+}
